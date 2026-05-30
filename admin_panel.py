@@ -75,8 +75,7 @@ Struktur JSON yang WAJIB kamu hasilkan:
   ],
   "shareholder_history": [
     {"tanggal": "30 Apr 2026", "jumlah": "761,361", "perubahan": "+46,510"}
-  ]
-
+  ],
   "insider_data": [
     {
       "date": "28 Jan 26",
@@ -95,7 +94,6 @@ Struktur JSON yang WAJIB kamu hasilkan:
     }
   ]
 }
-
 
 ATURAN:
 1. Pisahkan pemegang saham >1% dan 100% jika ada datanya.
@@ -131,16 +129,43 @@ if 'extracted_data' in st.session_state:
         # Menampilkan data JSON utuh agar CEO bisa mengubah/memvalidasi array-nya langsung
         edited_json_str = st.text_area("JSON Data (Validasi Struktur Array di Sini)", value=json.dumps(data, indent=4), height=500)
         
-        if st.form_submit_button("💾 Simpan Permanen ke Supabase"):
+        # TOMBOL SUBMIT ADA DI SINI SEKARANG
+        submitted = st.form_submit_button("💾 Simpan Smart Update ke Database")
+        
+        if submitted:
             try:
-                final_payload = json.loads(edited_json_str)
-                ticker = final_payload.get("ticker", "").upper()
+                # 1. Ambil data dari text area (hasil editan CEO)
+                raw_payload = json.loads(edited_json_str)
+                ticker = raw_payload.get("ticker", "").upper()
+                
                 if not ticker:
-                    st.error("Ticker kosong!")
+                    st.error("Ticker kosong! AI gagal membaca Ticker.")
                 else:
-                    with st.spinner("Menyimpan ke Supabase..."):
-                        supabase.table("company_profiles").upsert(final_payload).execute()
-                        st.success(f"🚀 BOOM! Data {ticker} beserta struktur pemegang sahamnya berhasil masuk ke Supabase!")
+                    # 2. FILTER PINTAR: Hanya masukkan data yang TIDAK kosong
+                    payload = {"ticker": ticker}
+                    
+                    for key, value in raw_payload.items():
+                        if key == "ticker":
+                            continue # Skip karena sudah diisi di atas
+                            
+                        # Jika teks, pastikan tidak kosong atau cuma strip/null
+                        if isinstance(value, str) and value.strip() not in ["", "-", "null"]:
+                            payload[key] = value
+                        # Jika list/array, pastikan ada isinya minimal 1
+                        elif isinstance(value, list) and len(value) > 0:
+                            payload[key] = value
+                        # Jika angka (seperti IPO price), pastikan lebih dari 0
+                        elif isinstance(value, (int, float)) and value > 0:
+                            payload[key] = value
+                    
+                    # 3. Kirim ke Supabase
+                    with st.spinner("Mengirim Smart Update ke Supabase..."):
+                        # Supabase hanya akan memperbarui kolom yang ada di dalam 'payload'
+                        supabase.table("company_profiles").upsert(payload).execute()
+                        st.success(f"🚀 BERHASIL! Data {ticker} berhasil di-update tanpa merusak data lama!")
                         del st.session_state['extracted_data']
+                        
+            except json.JSONDecodeError:
+                st.error("❌ Format JSON tidak valid! Periksa kembali tanda kutip atau koma di kotak teks di atas.")
             except Exception as e:
-                st.error(f"❌ Gagal menyimpan: {e}")
+                st.error(f"❌ Gagal menyimpan ke Supabase: {e}")
