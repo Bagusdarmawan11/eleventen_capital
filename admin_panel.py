@@ -13,9 +13,9 @@ st.set_page_config(page_title="ElevenTen Admin", page_icon="🤖", layout="wide"
 # ==========================================
 # ⚙️ GANTI 3 BARIS INI DENGAN KUNCI RAHASIAMU
 # ==========================================
-GEMINI_API_KEY = "PASTE_API_KEY_GEMINI_DI_SINI"
-SUPABASE_URL = "PASTE_PROJECT_URL_SUPABASE_DI_SINI"
-SUPABASE_KEY = "PASTE_KUNCI_SERVICE_ROLE_DI_SINI"
+GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 genai.configure(api_key=GEMINI_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
