@@ -76,12 +76,32 @@ Struktur JSON yang WAJIB kamu hasilkan:
   "shareholder_history": [
     {"tanggal": "30 Apr 2026", "jumlah": "761,361", "perubahan": "+46,510"}
   ]
+
+  "insider_data": [
+    {
+      "date": "28 Jan 26",
+      "action": "Buy",
+      "name": "ETY YUNIARTI",
+      "tag": "[D]",
+      "amount": "98,000",
+      "amount_pct": "+0.0001%",
+      "current": "291,262",
+      "current_pct": "0.0002%",
+      "previous": "193,262",
+      "previous_pct": "0.0001%",
+      "price": "3,640",
+      "type": "Domestic",
+      "source": "IDX"
+    }
+  ]
 }
+
 
 ATURAN:
 1. Pisahkan pemegang saham >1% dan 100% jika ada datanya.
 2. Untuk Direksi/Komisaris, lihat tag [K] untuk Komisaris dan [D] untuk Direksi.
-3. HANYA KEMBALIKAN JSON MURNI. JIKA DATA TIDAK ADA DI GAMBAR, ISI DENGAN NULL ATAU ARRAY KOSONG [].
+3. Untuk Insider, tangkap jenis action (Buy/Sell/Cross/Transfer/Corp Action), sumber (IDX/KSEI), dan arah panah (jika Buy/naik beri tanda +, jika Sell/turun beri tanda - pada amount_pct).
+4. HANYA KEMBALIKAN JSON MURNI. JIKA DATA TIDAK ADA DI GAMBAR, ISI DENGAN NULL ATAU ARRAY KOSONG [].
 """
 
 st.title("🤖 ElevenTen Capital - Smart Admin Panel")
