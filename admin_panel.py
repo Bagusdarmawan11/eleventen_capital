@@ -35,14 +35,14 @@ def load_best_model():
 model, model_name = load_best_model()
 
 # ==========================================
-# 🧠 PROMPT AI VERSI JSONB (STRUKTUR KOMPLEKS)
+# 🧠 MASTER PROMPT AI VERSI ULTIMATE 
 # ==========================================
 PROMPT_INSTRUCTION = """
-Kamu adalah sistem ekstraksi data finansial tingkat lanjut. Baca SEMUA gambar yang dilampirkan (screenshot profil emiten saham) dan ekstrak HANYA ke dalam format JSON murni.
+Kamu adalah sistem ekstraksi data finansial tingkat lanjut. Baca SEMUA gambar yang dilampirkan dan ekstrak HANYA ke dalam format JSON murni.
 
 Struktur JSON yang WAJIB kamu hasilkan:
 {
-  "ticker": "BBCA",
+  "ticker": "AADI",
   "company_name": "...",
   "description": "...",
   "sector": "...",
@@ -61,8 +61,9 @@ Struktur JSON yang WAJIB kamu hasilkan:
   "free_float": "...",
   "penjamin_emisi": "...",
   "biro_administrasi": "...",
+
   "shareholders_greater_1": [
-    {"nama": "PT DWIMURIA...", "saham": "67.73 B", "persentase": "54.94%"}
+    {"nama": "PT DWIMURIA INVESTAMA", "saham": "67.73 B", "persentase": "54.94%"}
   ],
   "shareholders_100": [
     {"nama": "MASYARAKAT NON WARKAT", "saham": "51.97 B", "persentase": "42.159%"}
@@ -76,6 +77,7 @@ Struktur JSON yang WAJIB kamu hasilkan:
   "shareholder_history": [
     {"tanggal": "30 Apr 2026", "jumlah": "761,361", "perubahan": "+46,510"}
   ],
+
   "insider_data": [
     {
       "date": "28 Jan 26",
@@ -92,14 +94,43 @@ Struktur JSON yang WAJIB kamu hasilkan:
       "type": "Domestic",
       "source": "IDX"
     }
-  ]
+  ],
+  
+  "corp_action": [
+    {
+      "type": "Dividen", 
+      "status": "Ongoing", 
+      "title_val": "Rp 456.9", 
+      "details": {"Cum Date": "4 Jun 2026", "Ex Date": "5 Jun 2026", "Tanggal Pencatatan": "8 Jun 2026"}
+    }
+  ],
+
+  "seasonality": [
+    {"row_name": "Rata-rata", "jan": "10.23", "feb": "-3.56", "mar": "9.46", "apr": "2.97"},
+    {"row_name": "2026", "jan": "8.96", "feb": "21.71", "mar": "21.89", "apr": "2.88"},
+    {"row_name": "Probabilitas", "jan": "100", "feb": "50", "mar": "50", "apr": "100"}
+  ],
+
+  "fin_income_annual": [
+    {"period": "2021", "revenue": "55.3T", "net_income": "10.5T", "net_margin": "19%"}
+  ],
+  "fin_income_quarter": [
+    {"period": "Q1 2025", "revenue": "19T", "net_income": "3.2T", "net_margin": "17%"}
+  ],
+  "fin_balance_annual": [],
+  "fin_balance_quarter": [],
+  "fin_cashflow_annual": [],
+  "fin_cashflow_quarter": []
 }
 
-ATURAN:
-1. Pisahkan pemegang saham >1% dan 100% jika ada datanya.
-2. Untuk Direksi/Komisaris, lihat tag [K] untuk Komisaris dan [D] untuk Direksi.
-3. Untuk Insider, tangkap jenis action (Buy/Sell/Cross/Transfer/Corp Action), sumber (IDX/KSEI), dan arah panah (jika Buy/naik beri tanda +, jika Sell/turun beri tanda - pada amount_pct).
-4. HANYA KEMBALIKAN JSON MURNI. JIKA DATA TIDAK ADA DI GAMBAR, ISI DENGAN NULL ATAU ARRAY KOSONG [].
+ATURAN WAJIB (BACA DENGAN TELITI):
+1. AKURASI TINGKAT TINGGI: Baca angka, tanda baca (titik/koma), singkatan (M/B/T), dan teks DENGAN SANGAT TELITI. DILARANG KERAS melakukan typo atau salah penempatan desimal. Pastikan "ipo_price" selalu berupa angka bulat/integer (contoh: 1400).
+2. Pemegang Saham: Pisahkan >1% dan 100%. Untuk Direksi/Komisaris, terjemahkan tag [K] = Komisaris, [D] = Direksi.
+3. Insider: Tangkap jenis action (Buy/Sell/Cross/Transfer/Corp Action), sumber (IDX/KSEI), dan arah panah (Buy=+ / Sell=- pada amount_pct).
+4. Corp Action: Tangkap tipe (Dividen/RUPS/dll), status (jika ada tag ungu Ongoing), dan masukkan semua baris data ke dalam objek "details".
+5. Seasonality: Ambil nama baris (Rata-rata, Tahun, Probabilitas) dan masukkan nilai per bulannya. HILANGKAN tanda % khusus di tabel Seasonality. 
+6. Financials (Annual vs Quarter): PERHATIKAN tulisan "Annual" atau "Quarter" pada menu dropdown di gambar. Jika gambar "Annual", WAJIB isi array _annual dan kosongkan _quarter (dan sebaliknya).
+7. HANYA KEMBALIKAN JSON MURNI. JIKA GAMBAR TIDAK MENGANDUNG DATA TERSEBUT, ISI DENGAN ARRAY KOSONG [].
 """
 
 st.title("🤖 ElevenTen Capital - Smart Admin Panel")
@@ -111,61 +142,63 @@ if uploaded_files:
     images = [Image.open(f) for f in uploaded_files]
     st.image(images, width=150)
 
-    if st.button("✨ Ekstrak Seluruh Data (Termasuk Pemegang Saham)", type="primary"):
-        with st.spinner('AI sedang menganalisis seluruh struktur data...'):
+    if st.button("✨ Ekstrak Seluruh Data", type="primary"):
+        with st.spinner('AI sedang membedah piksel gambar dengan akurasi tinggi...'):
             try:
                 response = model.generate_content([PROMPT_INSTRUCTION] + images)
-                raw_text = response.text.replace("```json", "").replace("```", "").strip()
-                st.session_state['extracted_data'] = json.loads(raw_text)
-                st.success("✅ AI berhasil memetakan struktur data yang kompleks!")
+                raw_text = response.text
+                
+                # 🛡️ BULLETPROOF JSON EXTRACTOR: Paksa ambil hanya isi dalam { }
+                start_idx = raw_text.find('{')
+                end_idx = raw_text.rfind('}')
+                
+                if start_idx != -1 and end_idx != -1:
+                    json_str = raw_text[start_idx:end_idx+1]
+                    st.session_state['extracted_data'] = json.loads(json_str)
+                    st.success("✅ AI berhasil memetakan struktur data tanpa cacat!")
+                else:
+                    st.error("❌ AI gagal menghasilkan format JSON. Silakan coba lagi.")
+                    
             except Exception as e:
-                st.error(f"❌ Kesalahan: {e}")
+                st.error(f"❌ Kesalahan Sistem: {e}")
 
 if 'extracted_data' in st.session_state:
     data = st.session_state['extracted_data']
-    st.markdown("### 📋 Preview JSON Data Kompleks (Bisa Diedit Manual)")
+    st.markdown("### 📋 Preview JSON (Validasi Sebelum Simpan)")
     
     with st.form("validation_form"):
-        # Menampilkan data JSON utuh agar CEO bisa mengubah/memvalidasi array-nya langsung
-        edited_json_str = st.text_area("JSON Data (Validasi Struktur Array di Sini)", value=json.dumps(data, indent=4), height=500)
-        
-        # TOMBOL SUBMIT ADA DI SINI SEKARANG
+        edited_json_str = st.text_area("Cek & Edit Manual jika diperlukan:", value=json.dumps(data, indent=4), height=500)
         submitted = st.form_submit_button("💾 Simpan Smart Update ke Database")
         
         if submitted:
             try:
-                # 1. Ambil data dari text area (hasil editan CEO)
                 raw_payload = json.loads(edited_json_str)
                 ticker = raw_payload.get("ticker", "").upper()
                 
                 if not ticker:
                     st.error("Ticker kosong! AI gagal membaca Ticker.")
                 else:
-                    # 2. FILTER PINTAR: Hanya masukkan data yang TIDAK kosong
+                    # ====================================================
+                    # 🛡️ SMART PATCHER: Filter ketat penolak data kosong
+                    # ====================================================
                     payload = {"ticker": ticker}
-                    
                     for key, value in raw_payload.items():
-                        if key == "ticker":
-                            continue # Skip karena sudah diisi di atas
-                            
-                        # Jika teks, pastikan tidak kosong atau cuma strip/null
+                        if key == "ticker": continue
+                        
+                        # Aturan kelolosan data:
                         if isinstance(value, str) and value.strip() not in ["", "-", "null"]:
                             payload[key] = value
-                        # Jika list/array, pastikan ada isinya minimal 1
                         elif isinstance(value, list) and len(value) > 0:
                             payload[key] = value
-                        # Jika angka (seperti IPO price), pastikan lebih dari 0
                         elif isinstance(value, (int, float)) and value > 0:
                             payload[key] = value
                     
-                    # 3. Kirim ke Supabase
                     with st.spinner("Mengirim Smart Update ke Supabase..."):
-                        # Supabase hanya akan memperbarui kolom yang ada di dalam 'payload'
                         supabase.table("company_profiles").upsert(payload).execute()
-                        st.success(f"🚀 BERHASIL! Data {ticker} berhasil di-update tanpa merusak data lama!")
+                        st.success(f"🚀 BERHASIL! Data {ticker} sukses diperbarui tanpa merusak brankas lama!")
                         del st.session_state['extracted_data']
                         
             except json.JSONDecodeError:
-                st.error("❌ Format JSON tidak valid! Periksa kembali tanda kutip atau koma di kotak teks di atas.")
+                st.error("❌ Format JSON tidak valid! Ada kutip atau koma yang salah saat Anda mengedit manual.")
             except Exception as e:
-                st.error(f"❌ Gagal menyimpan ke Supabase: {e}")
+                st.error(f"❌ Gagal menyimpan ke Database: {e}")
