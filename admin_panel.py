@@ -35,7 +35,7 @@ def load_best_model():
 model, model_name = load_best_model()
 
 # ==========================================
-# 🧠 MASTER PROMPT AI VERSI ULTIMATE & RIGID (FOR GRAPHING)
+# 🧠 MASTER PROMPT AI VERSI ULTIMATE (TAK TERPOTONG)
 # ==========================================
 PROMPT_INSTRUCTION = """
 Kamu adalah sistem ekstraksi data finansial tingkat lanjut. Tugasmu adalah membaca BEBERAPA gambar screenshot profil saham (yang mungkin merupakan potongan screenshot dari satu halaman panjang) dan mengekstrak informasinya ke dalam format JSON murni. Rangkum dan gabungkan informasi dari semua gambar tersebut.
@@ -66,7 +66,7 @@ Ekstrak key berikut persis seperti penamaan ini:
 - "shareholders_100": [ (Daftar pemegang saham masyarakat)
     {"nama": "MASYARAKAT NON WARKAT", "saham": "51.97 B", "persentase": "42.159%"}
   ],
-- "board_members": [ (Daftar Direksi & Komisaris, tag [K] terjemahkan sebagai Komisaris, [D] sebagai Direksi)
+- "board_members": [ (Daftar Direksi & Komisaris)
     {"nama": "JAHJA SETIAATMADJA", "jabatan": "Komisaris", "saham": "35.80 M", "persentase": "0.03%"}
   ],
 - "ubo": [ (Daftar nama Ultimate Beneficiary Owner)
@@ -75,7 +75,7 @@ Ekstrak key berikut persis seperti penamaan ini:
 - "shareholder_history": [ (Histori jumlah pemegang saham)
     {"tanggal": "30 Apr 2026", "jumlah": "761,361", "perubahan": "+46,510"}
   ],
-- "insider_data": [ (Histori transaksi insider, tangkap jenis action Buy/Sell/Cross, sumber IDX/KSEI, harga, jumlah lembar, dll)
+- "insider_data": [ (Histori transaksi insider)
     {
       "date": "28 Jan 26",
       "action": "Buy",
@@ -92,48 +92,60 @@ Ekstrak key berikut persis seperti penamaan ini:
       "source": "IDX"
     }
   ],
-- "corp_action": [ (Aksi korporasi seperti Dividen, RUPS, Right Issue, Stock Split. Tangkap type, status, title_val, details)
+- "corp_action": [ (Aksi korporasi seperti Dividen, RUPS, Right Issue)
     {
       "type": "Dividen", 
       "status": "Ongoing", 
       "title_val": "Rp 456.9", 
       "details": {"Cum Date": "4 Jun 2026", "Ex Date": "5 Jun 2026", "Tanggal Pencatatan": "8 Jun 2026", "Tanggal Pembayaran": "25 Jun 2026"}
-    },
-    {
-      "type": "RUPS", 
-      "status": "", 
-      "title_val": "", 
-      "details": {"Tanggal RUPS": "22 Mei 2026", "Waktu RUPS": "14:00", "Tempat RUPS": "Cyber 2 Tower"}
     }
   ],
-
-- "seasonality": [ (Tabel matrix seasonality MONTHLY. Tangkap row_name [Average, Tahun, Probability] dan nilai desimal [hilangkan %] untuk setiap bulan Jan-Dec)
-    {"row_name": "Average", "jan": "10.23", "feb": "-3.56", "mar": "9.46", "apr": "2.97", "may": "-1.50", "jun": "4.20", "jul": "3.15", "aug": "-2.80", "sep": "5.10", "oct": "1.90", "nov": "-3.30", "dec": "7.50"},
-    {"row_name": "2026", "jan": "8.96", "feb": "21.71", "mar": "21.89", "apr": "2.88", "may": "null", "jun": "null", "jul": "null", "aug": "null", "sep": "null", "oct": "null", "nov": "null", "dec": "null"},
-    {"row_name": "Probabilitas", "jan": "100", "feb": "50", "mar": "50", "apr": "100", "may": "75", "jun": "25", "jul": "80", "aug": "30", "sep": "90", "oct": "60", "nov": "40", "dec": "95"}
+- "seasonality": [ (Tabel matrix seasonality MONTHLY)
+    {"row_name": "Average", "jan": "10.23", "feb": "-3.56", "mar": "9.46", "apr": "2.97", "may": "-1.50", "jun": "4.20", "jul": "3.15", "aug": "-2.80", "sep": "5.10", "oct": "1.90", "nov": "-3.30", "dec": "7.50"}
   ],
-
-- "fin_income_annual": [ (Laporan Keuangan Laba Rugi TAHUNAN. Tangkap period [Tahun], Revenue, Net Income, Net Margin. Revenue & Net Income HARUS angka mentah/raw number dalam satuan yang sama, hilangkan T/B/M. Net Margin angka desimal/hilangkan %)
+- "fin_income_annual": [ (Laporan Keuangan Laba Rugi TAHUNAN)
     {"period": "2021", "revenue": "55300000000", "net_income": "10500000000", "net_margin": "19.0"}
   ],
-- "fin_income_quarter": [ (Laporan Keuangan Laba Rugi KUARTALAN. Tangkap period [Q1 2025], Revenue, Net Income, Net Margin. Revenue & Net Income HARUS angka mentah/raw number, Net Margin desimal)
+- "fin_income_quarter": [ (Laporan Keuangan Laba Rugi KUARTALAN)
     {"period": "Q1 2025", "revenue": "19000000000", "net_income": "32000000000", "net_margin": "17.0"}
   ],
-- "fin_balance_annual": [ (Laporan Keuangan Neraca TAHUNAN. Tangkap Total Assets, Total Liabilities, DER. Assets & Liabilities angka mentah/raw number, DER angka desimal)
+- "fin_balance_annual": [ (Laporan Keuangan Neraca TAHUNAN)
     {"period": "2021", "assets": "82000000000", "liabilities": "31000000000", "der": "0.38"}
   ],
 - "fin_balance_quarter": [], (Isi format sama dengan balance_annual)
-- "fin_cashflow_annual": [ (Laporan Keuangan Arus Kas TAHUNAN. Tangkap Net Operating, Net Investing, Net Financing. Semua HARUS angka mentah/raw number, tangkap tanda negatif jika ada)
+- "fin_cashflow_annual": [ (Laporan Keuangan Arus Kas TAHUNAN)
     {"period": "2021", "operating": "12000000000", "investing": "-3500000000", "financing": "-6800000000"}
   ],
 - "fin_cashflow_quarter": [] (Isi format sama dengan cashflow_annual)
 
-ATURAN WAJIB (BACA DENGAN TELITI): 
+=== TUGAS KEYSTATS (BARU) ===
+Format JSON untuk keystats:
+"keystats": [
+  {
+    "section": "Valuation",
+    "data": [
+      {"label": "Current PE Ratio (Annualised)", "value": "11.96"}
+    ]
+  },
+  {
+    "section": "Income Statement - EPS",
+    "is_table": true,
+    "data": [
+      {"Period": "Q1", "2026": "119.12", "2025": "114.75", "2024": "104.48"}
+    ]
+  }
+]
+
+ATURAN WAJIB (BACA DENGAN TELITI, JANGAN LEWATKAN SATUPUN): 
 1. KEMBALIKAN HANYA JSON MURNI. Jangan ada tambahan teks markdown seperti ```json atau awalan/akhiran apapun.
-2. JANGAN MELAKUKAN TYPO. Baca angka, tanda baca, dan singkatan (M/B/T) dengan SANGAT TELITI dari gambar aslinya.
-3. FINANCIAL DATA (fin_*): Semua angka HARUS dikonversi menjadi angka mentah (raw integer/float), hilangkan T/B/M/K. Net Margin dan DER HARUS angka desimal murni tanpa %. Perhatikan grafik batang dan garis untuk menangkap datanya.
-4. JIKA DATA TIDAK ADA: Isi dengan null (untuk teks tunggal) atau array kosong [] (untuk list).
-5. PERHATIKAN Annual vs Quarter: Periksa dropdown di gambar Financials untuk membedakan data Annual atau Quarter.
+2. JANGAN TYPO. Baca angka, koma, titik, dan singkatan (M/B/T) dengan akurasi 100%. Pastikan "ipo_price" selalu berupa angka bulat/integer.
+3. PEMEGANG SAHAM & DIREKSI: Pisahkan >1% dan 100%. Untuk Direksi/Komisaris, WAJIB terjemahkan tag [K] = Komisaris, [D] = Direksi.
+4. INSIDER: Tangkap jenis action (Buy/Sell/Cross/Transfer/Corp Action), sumber (IDX/KSEI), dan arah panah (Buy=+ / Sell=- pada amount_pct).
+5. CORP ACTION: Tangkap tipe, status (jika ada tag ungu Ongoing), dan masukkan SEMUA baris data ke dalam objek "details".
+6. SEASONALITY: Ambil nama baris (Average, Tahun, Probabilitas). HILANGKAN tanda % khusus di nilai tabel Seasonality agar terbaca sebagai angka.
+7. FINANCIALS: PERHATIKAN tulisan "Annual" atau "Quarter" pada dropdown di gambar. WAJIB konversi angka grafik menjadi angka mentah (raw integer/float), hilangkan T/B/M/K. Net Margin dan DER HARUS angka desimal murni tanpa %.
+8. KEYSTATS CERDAS: Jika Header tabel terpotong, lihat nilai angkanya: Jika nominalnya Kecil (puluhan/ratusan) = "Income Statement - EPS". Jika nominalnya Besar (Triliun/Miliar) sejalan Gross Profit = "Income Statement - Revenue". Jika nominalnya Besar tapi di bawah Revenue = "Income Statement - Net Income". Biarkan akhiran huruf (B/T/%) tetap ada khusus di value Keystats.
+9. JIKA DATA TIDAK ADA: Isi dengan null (untuk teks tunggal) atau array kosong [] (untuk list).
 """
 
 st.title("🤖 ElevenTen Capital - Smart Admin Panel")
@@ -209,7 +221,8 @@ if 'extracted_data' in st.session_state:
                         "shareholders_100", "board_members", "ubo", "shareholder_history", 
                         "insider_data", "corp_action", "seasonality", 
                         "fin_income_annual", "fin_income_quarter", "fin_balance_annual", 
-                        "fin_balance_quarter", "fin_cashflow_annual", "fin_cashflow_quarter"
+                        "fin_balance_quarter", "fin_cashflow_annual", "fin_cashflow_quarter",
+                        "keystats" 
                     ]
                     
                     for key in keys_to_check:
